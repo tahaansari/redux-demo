@@ -1,6 +1,9 @@
 // FETCH USER REQUEST FILE
 const redux = require("redux");
 const axios = require("axios");
+const thunkMiddleware = require("redux-thunk").default;
+
+const applyMiddleware = redux.applyMiddleware;
 
 // INITIAL GLOBAL STATE
 const initialState = {
@@ -58,13 +61,25 @@ const reducer = (state = initialState, action) => {
   }
 };
 
-const store = redux.createStore(reducer);
+const fetchUser = () => {
+  return function (dispatch) {
+    dispatch(fetchUserRequest());
+    axios
+      .get("https://jsonplaceholder.typicode.com/userss")
+      .then((response) => {
+        const users = response.data.map((user) => user.id);
+        dispatch(fetchUserSuccess(users));
+      })
+      .catch((error) => {
+        dispatch(fetchUserFailure(error.message));
+      });
+  };
+};
 
-axios
-  .get("https://jsonplaceholder.typicode.com/users")
-  .then((response) => {
-    console.log(response.data);
-  })
-  .catch((error) => {
-    console.log(error);
-  });
+const store = redux.createStore(reducer, applyMiddleware(thunkMiddleware));
+
+store.subscribe(() => {
+  console.log(store.getState());
+});
+
+store.dispatch(fetchUser());
